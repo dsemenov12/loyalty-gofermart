@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"time"
 	"fmt"
+	"reflect"
 
 	"github.com/dsemenov12/loyalty-gofermart/internal/auth"
 	"github.com/dsemenov12/loyalty-gofermart/internal/config"
 	"github.com/dsemenov12/loyalty-gofermart/internal/models"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type StorageDB struct {
@@ -30,11 +32,10 @@ func (s *StorageDB) CreateUser(login, hashedPassword string) error {
 	`, login, hashedPassword)
 
 	if err != nil {
-		// Обработка уникального ограничения на логин
-		if err.Error() == `pq: duplicate key value violates unique constraint "users_login_key"` {
-			return errors.New("user already exists")
-
-		}
+		// Проверка ошибки на наличие уникального ограничения
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+            return errors.New("user already exists")
+        }
 		return err
 	}
 	return nil
@@ -65,12 +66,14 @@ func (s *StorageDB) SaveOrder(ctx context.Context, orderNumber string) (bool, er
 	userID := ctx.Value(auth.UserIDKey)
 
 	// Проверка существующего номера заказа
-	var existingUserID int
+	var existingUserID string
 	err := s.conn.QueryRow(`
 		SELECT user_id FROM orders WHERE number = $1
 	`, orderNumber).Scan(&existingUserID)
 
 	if err == nil {
+		fmt.Println(reflect.TypeOf(existingUserID))
+		fmt.Println(reflect.TypeOf(userID))
 		if existingUserID == userID {
 			return false, errors.New("order already exists for the same user")
 		}
@@ -84,7 +87,7 @@ func (s *StorageDB) SaveOrder(ctx context.Context, orderNumber string) (bool, er
 	// Вставка нового заказа
 	_, err = s.conn.Exec(`
 		INSERT INTO orders (user_id, number, status, created_at)
-		VALUES ($1, $2, 'processing', NOW())
+		VALUES ($1, $2, 'PROCESSING', NOW())
 	`, userID, orderNumber)
 
 	if err != nil {

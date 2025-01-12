@@ -127,9 +127,9 @@ func (a *app) UserUploadOrder(w http.ResponseWriter, r *http.Request) {
 	status, err := a.storage.SaveOrder(r.Context(), orderNumber)
 	if err != nil {
 		fmt.Println(err)
-		if errors.Is(err, errors.New("order already exists for the same user")) {
+		if err.Error() == "order already exists for the same user" {
 			http.Error(w, "Order number already uploaded by this user", http.StatusOK)
-		} else if errors.Is(err, errors.New("order already exists for another user")) {
+		} else if err.Error() == "order already exists for another user" {
 			http.Error(w, "Order number already uploaded by another user", http.StatusConflict)
 		} else {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -140,7 +140,7 @@ func (a *app) UserUploadOrder(w http.ResponseWriter, r *http.Request) {
 	// Если номер принят в обработку
 	if status {
 		go a.checkOrderStatus(orderNumber)
-		
+
 		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprintln(w, "Order number accepted")
 	}
@@ -229,7 +229,6 @@ func (a *app) WithdrawUserBalance(w http.ResponseWriter, r *http.Request) {
 	// Получение баланса
 	balance, err := a.storage.GetBalance(r.Context())
 	if err != nil {
-		fmt.Println(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -243,7 +242,6 @@ func (a *app) WithdrawUserBalance(w http.ResponseWriter, r *http.Request) {
 	// Списание средств
 	err = a.storage.WithdrawUserBalance(r.Context(), req.Order, req.Sum)
 	if err != nil {
-		fmt.Println(err)
 		switch {
 		case err.Error() == "invalid order number":
 			http.Error(w, "Invalid order number", http.StatusUnprocessableEntity)
