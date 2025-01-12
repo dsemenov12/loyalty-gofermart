@@ -14,7 +14,6 @@ type Storage interface {
 	GetBalance(ctx context.Context) (*models.Balance, error)
 	WithdrawUserBalance(ctx context.Context, orderNumber string, amount float64) error
 	GetUserWithdrawals(ctx context.Context) ([]models.Withdrawal, error)
-	GetAccrualInfo(orderNumber string) (*models.AccrualInfo, error)
 	UpdateOrderStatus(orderNumber, status string, accrual float64) error
 	UpdateUserBalance(ctx context.Context, sum float64) error
 }

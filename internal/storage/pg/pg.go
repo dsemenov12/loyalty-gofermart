@@ -3,19 +3,13 @@ package pg
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/dsemenov12/loyalty-gofermart/internal/auth"
-	"github.com/dsemenov12/loyalty-gofermart/internal/config"
-	"github.com/dsemenov12/loyalty-gofermart/internal/logger"
 	"github.com/dsemenov12/loyalty-gofermart/internal/models"
 	"github.com/jackc/pgx/v5/pgconn"
-	"go.uber.org/zap"
 )
 
 type StorageDB struct {
@@ -235,40 +229,6 @@ func (s *StorageDB) GetUserWithdrawals(ctx context.Context) ([]models.Withdrawal
 	}
 
 	return withdrawals, nil
-}
-
-// Получает статус заказа и количество начисленных баллов из стороннего сервиса
-func (s *StorageDB) GetAccrualInfo(orderNumber string) (*models.AccrualInfo, error) {
-	client := &http.Client{Timeout: 10 * time.Second}
-
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/orders/%s", config.FlagAccrualSystemAddress, orderNumber), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	logger.Log.Info("Order processing", zap.String("status", strconv.Itoa(resp.StatusCode)))
-
-	// Обработка кодов ответа
-	switch resp.StatusCode {
-	case http.StatusOK:
-		var accrual models.AccrualInfo
-		if err := json.NewDecoder(resp.Body).Decode(&accrual); err != nil {
-			return nil, err
-		}
-		return &accrual, nil
-	case http.StatusNoContent:
-		return nil, errors.New("order not found")
-	case http.StatusTooManyRequests:
-		return nil, errors.New("too many requests")
-	default:
-		return nil, fmt.Errorf("unexpected response code: %d", resp.StatusCode)
-	}
 }
 
 // Обновляет статус заказа и количество начисленных баллов

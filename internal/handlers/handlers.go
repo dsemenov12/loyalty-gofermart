@@ -14,6 +14,7 @@ import (
 	"github.com/dsemenov12/loyalty-gofermart/internal/helpers/luhn"
 	"github.com/dsemenov12/loyalty-gofermart/internal/models"
 	"github.com/dsemenov12/loyalty-gofermart/internal/storage"
+    "github.com/dsemenov12/loyalty-gofermart/internal/accrual"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -279,7 +280,7 @@ func setCookieJWT(userID string, w http.ResponseWriter) {
 func (a *app) checkOrderStatus(ctx context.Context, orderNumber string) {
 	for {
 		// Получаем информацию о начислениях
-		accrualInfo, err := a.storage.GetAccrualInfo(orderNumber)
+		accrualInfo, err := accrual.GetAccrualInfo(orderNumber)
 		if err != nil {
 			if err.Error() == "order not found" {
 				// Если заказ не найден, завершаем процесс
