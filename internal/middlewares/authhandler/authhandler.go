@@ -10,7 +10,7 @@ import (
 func AuthHandle(handlerFunc http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var userID string
-		jwtToken, _ := r.Cookie("JWT")
+		jwtToken, _ := r.Cookie("Authorization")
 		if jwtToken == nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return

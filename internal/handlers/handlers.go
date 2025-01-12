@@ -267,7 +267,7 @@ func setCookieJWT(userID string, w http.ResponseWriter) {
 		return
 	}
     cookie := &http.Cookie{
-		Name: "JWT",
+		Name: "Authorization",
 		Value: tokenString,
 		Expires: time.Now().Add(24 * time.Hour),
 		Path: "/",
