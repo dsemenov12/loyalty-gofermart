@@ -2,13 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+    "context"
 
 	"github.com/dsemenov12/loyalty-gofermart/internal/auth"
 	"github.com/dsemenov12/loyalty-gofermart/internal/helpers/luhn"
@@ -126,7 +126,6 @@ func (a *app) UserUploadOrder(w http.ResponseWriter, r *http.Request) {
 	// Проверка уникальности номера заказа.
 	status, err := a.storage.SaveOrder(r.Context(), orderNumber)
 	if err != nil {
-		fmt.Println(err)
 		if err.Error() == "order already exists for the same user" {
 			http.Error(w, "Order number already uploaded by this user", http.StatusOK)
 		} else if err.Error() == "order already exists for another user" {
@@ -139,7 +138,7 @@ func (a *app) UserUploadOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Если номер принят в обработку
 	if status {
-		go a.checkOrderStatus(orderNumber)
+		go a.checkOrderStatus(r.Context(), orderNumber)
 
 		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprintln(w, "Order number accepted")
@@ -277,16 +276,16 @@ func setCookieJWT(userID string, w http.ResponseWriter) {
 }
 
 // Фоновая проверка статуса заказа
-func (a *app) checkOrderStatus(orderNumber string) {
+func (a *app) checkOrderStatus(ctx context.Context, orderNumber string) {
 	for {
 		// Получаем информацию о начислениях
 		accrualInfo, err := a.storage.GetAccrualInfo(orderNumber)
 		if err != nil {
-			if errors.Is(err, errors.New("order not found")) {
+			if err.Error() == "order not found" {
 				// Если заказ не найден, завершаем процесс
 				return
 			}
-			if errors.Is(err, errors.New("too many requests")) {
+			if err.Error() == "too many requests" {
 				// Если превышено количество запросов, ждем перед повторной попыткой
 				time.Sleep(1 * time.Minute)
 				continue
@@ -300,6 +299,10 @@ func (a *app) checkOrderStatus(orderNumber string) {
 		case "PROCESSED", "INVALID":
 			// Если статус окончательный, обновляем в хранилище и завершаем
 			_ = a.storage.UpdateOrderStatus(orderNumber, accrualInfo.Status, accrualInfo.Accrual)
+            // Обновление баланса пользователя, если статус "PROCESSED"
+			if accrualInfo.Status == "PROCESSED" {
+				_ = a.storage.UpdateUserBalance(ctx, accrualInfo.Accrual)
+			}
 			return
 		case "PROCESSING", "REGISTERED":
 			// Если статус временный, продолжаем проверку через заданный интервал

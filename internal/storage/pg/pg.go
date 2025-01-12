@@ -5,15 +5,17 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"net/http"
-	"time"
 	"fmt"
-	"reflect"
+	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/dsemenov12/loyalty-gofermart/internal/auth"
 	"github.com/dsemenov12/loyalty-gofermart/internal/config"
+	"github.com/dsemenov12/loyalty-gofermart/internal/logger"
 	"github.com/dsemenov12/loyalty-gofermart/internal/models"
 	"github.com/jackc/pgx/v5/pgconn"
+	"go.uber.org/zap"
 )
 
 type StorageDB struct {
@@ -72,8 +74,6 @@ func (s *StorageDB) SaveOrder(ctx context.Context, orderNumber string) (bool, er
 	`, orderNumber).Scan(&existingUserID)
 
 	if err == nil {
-		fmt.Println(reflect.TypeOf(existingUserID))
-		fmt.Println(reflect.TypeOf(userID))
 		if existingUserID == userID {
 			return false, errors.New("order already exists for the same user")
 		}
@@ -241,7 +241,7 @@ func (s *StorageDB) GetUserWithdrawals(ctx context.Context) ([]models.Withdrawal
 func (s *StorageDB) GetAccrualInfo(orderNumber string) (*models.AccrualInfo, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/orders/%s", config.FlagAccrualSystemAddress, orderNumber), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/orders/%s", "http://" + config.FlagAccrualSystemAddress, orderNumber), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -251,6 +251,8 @@ func (s *StorageDB) GetAccrualInfo(orderNumber string) (*models.AccrualInfo, err
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	logger.Log.Info("Order processing", zap.String("status", strconv.Itoa(resp.StatusCode)))
 
 	// Обработка кодов ответа
 	switch resp.StatusCode {
@@ -274,8 +276,44 @@ func (s *StorageDB) UpdateOrderStatus(orderNumber, status string, accrual float6
 	query := `
 		UPDATE orders
 		SET status = $2, accrual = $3, updated_at = NOW()
-		WHERE order_number = $1
+		WHERE number = $1
 	`
 	_, err := s.conn.Exec(query, orderNumber, status, accrual)
 	return err
+}
+
+// Обновление баланса пользователя
+func (s *StorageDB) UpdateUserBalance(ctx context.Context, sum float64) error {
+	userID := ctx.Value(auth.UserIDKey)
+    
+    // Проверяем, существует ли запись с балансом для данного пользователя
+    var currentBalance float64
+    err := s.conn.QueryRowContext(ctx, `
+        SELECT current FROM balance WHERE user_id = $1
+    `, userID).Scan(&currentBalance)
+
+    if err != nil {
+        if err.Error() == sql.ErrNoRows.Error() {
+            // Если записи нет, то создаем новую запись с начальным значением баланса
+            _, err := s.conn.ExecContext(ctx, `
+                INSERT INTO balance (user_id, current, withdrawn) 
+                VALUES ($1, $2, $3)
+            `, userID, sum, 0.0)
+            if err != nil {
+                return fmt.Errorf("failed to insert balance record: %v", err)
+            }
+            return nil
+        }
+        // Другие ошибки
+        return fmt.Errorf("failed to check balance: %v", err)
+    }
+
+    // Если запись с балансом существует, выполняем обновление
+    _, err = s.conn.ExecContext(ctx, `
+        UPDATE balance
+		SET current = current + $2
+		WHERE user_id = $1
+    `, userID, sum)
+    
+    return err
 }
