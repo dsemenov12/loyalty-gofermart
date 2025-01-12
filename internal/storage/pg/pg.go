@@ -241,7 +241,7 @@ func (s *StorageDB) GetUserWithdrawals(ctx context.Context) ([]models.Withdrawal
 func (s *StorageDB) GetAccrualInfo(orderNumber string) (*models.AccrualInfo, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/orders/%s", "http://" + config.FlagAccrualSystemAddress, orderNumber), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/orders/%s", config.FlagAccrualSystemAddress, orderNumber), nil)
 	if err != nil {
 		return nil, err
 	}

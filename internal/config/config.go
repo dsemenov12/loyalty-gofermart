@@ -14,7 +14,7 @@ func ParseFlags() {
 	flag.StringVar(&FlagRunAddr, "a", "localhost:8080", "адрес запуска HTTP-сервера")
 	flag.StringVar(&FlagLogLevel, "l", "info", "log level")
 	flag.StringVar(&FlagDatabaseURI, "d", "", "адрес подключения к БД")
-	flag.StringVar(&FlagAccrualSystemAddress, "r", "127.0.0.1:8081", "адрес системы расчёта начислений")
+	flag.StringVar(&FlagAccrualSystemAddress, "r", "http://127.0.0.1:8081", "адрес системы расчёта начислений")
 
 	flag.Parse()
 
