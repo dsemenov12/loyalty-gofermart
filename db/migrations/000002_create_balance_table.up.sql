@@ -1,0 +1,6 @@
+CREATE TABLE balance (
+    user_id INT PRIMARY KEY,
+    current DECIMAL(10, 2) DEFAULT 0 NOT NULL,
+    withdrawn DECIMAL(10, 2) DEFAULT 0 NOT NULL,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
