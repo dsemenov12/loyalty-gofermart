@@ -9,6 +9,7 @@ import (
 	"testing"
     "time"
 
+    "github.com/dsemenov12/loyalty-gofermart/internal/auth"
 	"github.com/dsemenov12/loyalty-gofermart/internal/models"
 	"github.com/dsemenov12/loyalty-gofermart/internal/storage/mocks"
 	"github.com/golang/mock/gomock"
@@ -311,7 +312,7 @@ func Test_app_GetUserWithdrawals(t *testing.T) {
 			request := httptest.NewRequest(http.MethodGet, "/api/user/withdrawals", nil)
 			response := httptest.NewRecorder()
 
-			ctx := context.WithValue(request.Context(), "userID", tt.userID)
+			ctx := context.WithValue(request.Context(), auth.UserIDKey, tt.userID)
 			request = request.WithContext(ctx)
 
 			app.GetUserWithdrawals(response, request)
@@ -364,7 +365,7 @@ func Test_app_WithdrawUserBalance(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/api/user/balance/withdraw", strings.NewReader(tt.body))
 			response := httptest.NewRecorder()
 
-			ctx := context.WithValue(request.Context(), "userID", tt.userID)
+			ctx := context.WithValue(request.Context(), auth.UserIDKey, tt.userID)
 			request = request.WithContext(ctx)
 
 			app.WithdrawUserBalance(response, request)
