@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+    "time"
 
 	"github.com/dsemenov12/loyalty-gofermart/internal/models"
 	"github.com/dsemenov12/loyalty-gofermart/internal/storage/mocks"
@@ -159,138 +160,249 @@ func Test_app_UserLogin(t *testing.T) {
 
 // Тестирование метода UserUploadOrder
 func Test_app_UserUploadOrder(t *testing.T) {
-	type args struct {
-		w http.ResponseWriter
-		r *http.Request
-	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Создаем мок хранилища
+	m := mocks.NewMockStorage(ctrl)
+	m.EXPECT().SaveOrder(gomock.Any(), "1234567890318").Return(true, nil).AnyTimes()
+
+	// Создаем экземпляр приложения
+	app := NewApp(m)
+
 	tests := []struct {
 		name string
-		a    *app
-		args args
+		body string
+		want int
 	}{
-		// TODO: Add test cases.
+		{
+			name: "positive test",
+			body: "1234567890318",
+			want: http.StatusAccepted,
+		},
+		{
+			name: "bad request test (invalid order)",
+			body: "abcdef",
+			want: http.StatusUnprocessableEntity,
+		},
+		{
+			name: "empty request",
+			body: "",
+			want: http.StatusBadRequest,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.a.UserUploadOrder(tt.args.w, tt.args.r)
+			request := httptest.NewRequest(http.MethodPost, "/api/user/orders", strings.NewReader(tt.body))
+			response := httptest.NewRecorder()
+
+			app.UserUploadOrder(response, request)
+
+			res := response.Result()
+			defer res.Body.Close()
+
+			assert.Equal(t, tt.want, res.StatusCode)
 		})
 	}
 }
 
 // Тестирование метода UserGetOrders
 func Test_app_UserGetOrders(t *testing.T) {
-	type args struct {
-		w http.ResponseWriter
-		r *http.Request
-	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := mocks.NewMockStorage(ctrl)
+	app := NewApp(m)
+
+	m.EXPECT().GetOrdersByUser(gomock.Any()).Return([]models.Order{}, nil).AnyTimes()
+
 	tests := []struct {
 		name string
-		a    *app
-		args args
+		want int
 	}{
-		// TODO: Add test cases.
+        {
+			name: "no content",
+			want: http.StatusNoContent,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.a.UserGetOrders(tt.args.w, tt.args.r)
+			request := httptest.NewRequest(http.MethodGet, "/api/user/orders", nil)
+			response := httptest.NewRecorder()
+
+			app.UserGetOrders(response, request)
+
+			res := response.Result()
+			defer res.Body.Close()
+
+			assert.Equal(t, tt.want, res.StatusCode)
 		})
 	}
 }
 
 // Тестирование метода GetUserBalance
 func Test_app_GetUserBalance(t *testing.T) {
-	type args struct {
-		w http.ResponseWriter
-		r *http.Request
-	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := mocks.NewMockStorage(ctrl)
+	app := NewApp(m)
+
+	m.EXPECT().GetBalance(gomock.Any()).Return(&models.Balance{Current: 100.0}, nil).AnyTimes()
+
 	tests := []struct {
 		name string
-		a    *app
-		args args
+		want int
 	}{
-		// TODO: Add test cases.
+		{
+			name: "positive test",
+			want: http.StatusOK,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.a.GetUserBalance(tt.args.w, tt.args.r)
+			request := httptest.NewRequest(http.MethodGet, "/api/user/balance", nil)
+			response := httptest.NewRecorder()
+
+			app.GetUserBalance(response, request)
+
+			res := response.Result()
+			defer res.Body.Close()
+
+			assert.Equal(t, tt.want, res.StatusCode)
 		})
 	}
 }
 
 // Тестирование метода GetUserWithdrawals
 func Test_app_GetUserWithdrawals(t *testing.T) {
-	type args struct {
-		w http.ResponseWriter
-		r *http.Request
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Создаем мок хранилища
+	m := mocks.NewMockStorage(ctrl)
+
+	mockWithdrawals := []models.Withdrawal{
+		{Order: "123456789", Sum: 500, ProcessedAt: time.Now().Format(time.RFC3339)},
 	}
+
+	m.EXPECT().GetUserWithdrawals(gomock.Any()).Return(mockWithdrawals, nil).AnyTimes()
+
+	app := NewApp(m)
+
 	tests := []struct {
-		name string
-		a    *app
-		args args
+		name       string
+		userID     int64
+		wantCode   int
+		wantResult string
 	}{
-		// TODO: Add test cases.
+		{
+			name:     "positive test",
+			userID:   1,
+			wantCode: http.StatusOK,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.a.GetUserWithdrawals(tt.args.w, tt.args.r)
+			request := httptest.NewRequest(http.MethodGet, "/api/user/withdrawals", nil)
+			response := httptest.NewRecorder()
+
+			ctx := context.WithValue(request.Context(), "userID", tt.userID)
+			request = request.WithContext(ctx)
+
+			app.GetUserWithdrawals(response, request)
+
+			res := response.Result()
+			defer res.Body.Close()
+
+			assert.Equal(t, tt.wantCode, res.StatusCode)
 		})
 	}
 }
 
+// Тестирование метода WithdrawUserBalance
 func Test_app_WithdrawUserBalance(t *testing.T) {
-	type args struct {
-		w http.ResponseWriter
-		r *http.Request
-	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := mocks.NewMockStorage(ctrl)
+
+	m.EXPECT().WithdrawUserBalance(gomock.Any(), "123456789", float64(100)).Return(nil).AnyTimes()
+	m.EXPECT().WithdrawUserBalance(gomock.Any(), "123456789", float64(100)).Return(errors.New("insufficient funds")).AnyTimes()
+
+    m.EXPECT().GetBalance(gomock.Any()).Return(&models.Balance{Current: 100, Withdrawn: 0}, nil).AnyTimes()
+	m.EXPECT().GetBalance(gomock.Any()).Return(&models.Balance{Current: 0, Withdrawn: 0}, nil).AnyTimes()
+
+	app := NewApp(m)
+
 	tests := []struct {
-		name string
-		a    *app
-		args args
+		name     string
+		userID   int64
+		body     string
+		wantCode int
 	}{
-		// TODO: Add test cases.
+		{
+			name:     "positive test",
+			userID:   1,
+			body:     `{"order": "123456789", "sum": 100}`,
+			wantCode: http.StatusOK,
+		},
+		{
+			name:     "empty body test",
+			userID:   1,
+			body:     ``,
+			wantCode: http.StatusUnprocessableEntity,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.a.WithdrawUserBalance(tt.args.w, tt.args.r)
+			request := httptest.NewRequest(http.MethodPost, "/api/user/balance/withdraw", strings.NewReader(tt.body))
+			response := httptest.NewRecorder()
+
+			ctx := context.WithValue(request.Context(), "userID", tt.userID)
+			request = request.WithContext(ctx)
+
+			app.WithdrawUserBalance(response, request)
+
+			res := response.Result()
+			defer res.Body.Close()
+
+			assert.Equal(t, tt.wantCode, res.StatusCode)
 		})
 	}
 }
 
 // Тестирование метода setCookieJWT
 func Test_setCookieJWT(t *testing.T) {
-	type args struct {
+	tests := []struct {
+		name   string
 		userID string
-		w      http.ResponseWriter
-	}
-	tests := []struct {
-		name string
-		args args
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "set valid cookie",
+			userID: "1",
+		},
+		{
+			name:   "set empty user ID",
+			userID: "",
+		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			setCookieJWT(tt.args.userID, tt.args.w)
-		})
-	}
-}
 
-// Тестирование метода checkOrderStatus
-func Test_app_checkOrderStatus(t *testing.T) {
-	type args struct {
-		ctx         context.Context
-		orderNumber string
-	}
-	tests := []struct {
-		name string
-		a    *app
-		args args
-	}{
-		// TODO: Add test cases.
-	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.a.checkOrderStatus(tt.args.ctx, tt.args.orderNumber)
+			response := httptest.NewRecorder()
+			setCookieJWT(tt.userID, response)
+
+			res := response.Result()
+			defer res.Body.Close()
+
+			cookie := res.Cookies()
+			assert.NotEmpty(t, cookie, "Expected cookie to be set")
 		})
 	}
 }
