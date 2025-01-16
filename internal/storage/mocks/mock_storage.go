@@ -49,21 +49,6 @@ func (mr *MockStorageMockRecorder) CreateUser(login, hashedPassword interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockStorage)(nil).CreateUser), login, hashedPassword)
 }
 
-// GetAccrualInfo mocks base method.
-func (m *MockStorage) GetAccrualInfo(orderNumber string) (*models.AccrualInfo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAccrualInfo", orderNumber)
-	ret0, _ := ret[0].(*models.AccrualInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAccrualInfo indicates an expected call of GetAccrualInfo.
-func (mr *MockStorageMockRecorder) GetAccrualInfo(orderNumber interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccrualInfo", reflect.TypeOf((*MockStorage)(nil).GetAccrualInfo), orderNumber)
-}
-
 // GetBalance mocks base method.
 func (m *MockStorage) GetBalance(ctx context.Context) (*models.Balance, error) {
 	m.ctrl.T.Helper()
@@ -151,6 +136,20 @@ func (m *MockStorage) UpdateOrderStatus(orderNumber, status string, accrual floa
 func (mr *MockStorageMockRecorder) UpdateOrderStatus(orderNumber, status, accrual interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrderStatus", reflect.TypeOf((*MockStorage)(nil).UpdateOrderStatus), orderNumber, status, accrual)
+}
+
+// UpdateUserBalance mocks base method.
+func (m *MockStorage) UpdateUserBalance(ctx context.Context, sum float64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateUserBalance", ctx, sum)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateUserBalance indicates an expected call of UpdateUserBalance.
+func (mr *MockStorageMockRecorder) UpdateUserBalance(ctx, sum interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserBalance", reflect.TypeOf((*MockStorage)(nil).UpdateUserBalance), ctx, sum)
 }
 
 // WithdrawUserBalance mocks base method.
