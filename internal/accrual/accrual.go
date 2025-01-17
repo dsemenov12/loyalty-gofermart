@@ -8,22 +8,42 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dsemenov12/loyalty-gofermart/internal/config"
 	"github.com/dsemenov12/loyalty-gofermart/internal/logger"
 	"github.com/dsemenov12/loyalty-gofermart/internal/models"
 	"go.uber.org/zap"
 )
 
-// Получает статус заказа и количество начисленных баллов из стороннего сервиса
-func GetAccrualInfo(orderNumber string) (*models.AccrualInfo, error) {
-	client := &http.Client{Timeout: 10 * time.Second}
+type AccrualClient interface {
+	GetAccrualInfo(orderNumber string) (*models.AccrualInfo, error)
+}
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/orders/%s", config.FlagAccrualSystemAddress, orderNumber), nil)
+type Client struct {
+	httpClient *http.Client
+	baseURL    string
+}
+
+func NewClient(baseURL string) *Client {
+	return &Client{
+		httpClient: &http.Client{
+			Timeout: 10 * time.Second,
+			Transport: &http.Transport{
+				MaxIdleConns: 100,
+				IdleConnTimeout: 10 * time.Second,
+				DisableKeepAlives: false,
+			},
+		},
+		baseURL: baseURL,
+	}
+}
+
+// Получает статус заказа и количество начисленных баллов из стороннего сервиса
+func (c *Client) GetAccrualInfo(orderNumber string) (*models.AccrualInfo, error) {
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/orders/%s", c.baseURL, orderNumber), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := client.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

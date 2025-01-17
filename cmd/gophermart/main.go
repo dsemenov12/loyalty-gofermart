@@ -29,8 +29,6 @@ func main() {
 }
 
 func run() error {
-	var storage storage.Storage
-
 	if config.FlagDatabaseURI == "" {
 		return errors.New("empty database DSN")
 	}
@@ -47,7 +45,7 @@ func run() error {
 		return err
 	}
 
-	storage = pg.NewStorage(conn)
+	storage := pg.NewStorage(conn)
 	app := handlers.NewApp(storage)
 
 	if err = logger.Initialize(config.FlagLogLevel); err != nil {
