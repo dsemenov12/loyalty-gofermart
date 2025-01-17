@@ -279,9 +279,9 @@ func setCookieJWT(userID string, w http.ResponseWriter) {
 
 // Фоновая проверка статуса заказа
 func (a *app) checkOrderStatus(ctx context.Context, orderNumber string) {
-	for {
-		client := accrual.NewClient(config.FlagAccrualSystemAddress)
+	client := accrual.NewClient(config.FlagAccrualSystemAddress)
 
+	for {
 		// Получаем информацию о начислениях
 		accrualInfo, err := client.GetAccrualInfo(orderNumber)
 		if err != nil {

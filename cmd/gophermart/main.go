@@ -7,7 +7,6 @@ import (
 	"errors"
 
 	"github.com/dsemenov12/loyalty-gofermart/internal/config"
-	"github.com/dsemenov12/loyalty-gofermart/internal/storage"
 	"github.com/dsemenov12/loyalty-gofermart/internal/storage/pg"
 	"github.com/dsemenov12/loyalty-gofermart/internal/handlers"
 	"github.com/dsemenov12/loyalty-gofermart/internal/logger"
