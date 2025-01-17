@@ -36,17 +36,17 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 }
 
 // CreateUser mocks base method.
-func (m *MockStorage) CreateUser(login, hashedPassword string) error {
+func (m *MockStorage) CreateUser(ctx context.Context, login, hashedPassword string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateUser", login, hashedPassword)
+	ret := m.ctrl.Call(m, "CreateUser", ctx, login, hashedPassword)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateUser indicates an expected call of CreateUser.
-func (mr *MockStorageMockRecorder) CreateUser(login, hashedPassword interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) CreateUser(ctx, login, hashedPassword interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockStorage)(nil).CreateUser), login, hashedPassword)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockStorage)(nil).CreateUser), ctx, login, hashedPassword)
 }
 
 // GetBalance mocks base method.
@@ -80,18 +80,18 @@ func (mr *MockStorageMockRecorder) GetOrdersByUser(ctx interface{}) *gomock.Call
 }
 
 // GetUserByLogin mocks base method.
-func (m *MockStorage) GetUserByLogin(login string) (*models.User, error) {
+func (m *MockStorage) GetUserByLogin(ctx context.Context, login string) (*models.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserByLogin", login)
+	ret := m.ctrl.Call(m, "GetUserByLogin", ctx, login)
 	ret0, _ := ret[0].(*models.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUserByLogin indicates an expected call of GetUserByLogin.
-func (mr *MockStorageMockRecorder) GetUserByLogin(login interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) GetUserByLogin(ctx, login interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByLogin", reflect.TypeOf((*MockStorage)(nil).GetUserByLogin), login)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByLogin", reflect.TypeOf((*MockStorage)(nil).GetUserByLogin), ctx, login)
 }
 
 // GetUserWithdrawals mocks base method.
@@ -125,17 +125,17 @@ func (mr *MockStorageMockRecorder) SaveOrder(ctx, orderNumber interface{}) *gomo
 }
 
 // UpdateOrderStatus mocks base method.
-func (m *MockStorage) UpdateOrderStatus(orderNumber, status string, accrual float64) error {
+func (m *MockStorage) UpdateOrderStatus(ctx context.Context, orderNumber, status string, accrual float64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateOrderStatus", orderNumber, status, accrual)
+	ret := m.ctrl.Call(m, "UpdateOrderStatus", ctx, orderNumber, status, accrual)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateOrderStatus indicates an expected call of UpdateOrderStatus.
-func (mr *MockStorageMockRecorder) UpdateOrderStatus(orderNumber, status, accrual interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) UpdateOrderStatus(ctx, orderNumber, status, accrual interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrderStatus", reflect.TypeOf((*MockStorage)(nil).UpdateOrderStatus), orderNumber, status, accrual)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrderStatus", reflect.TypeOf((*MockStorage)(nil).UpdateOrderStatus), ctx, orderNumber, status, accrual)
 }
 
 // UpdateUserBalance mocks base method.

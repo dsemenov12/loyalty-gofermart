@@ -50,7 +50,7 @@ func (a *app) UserRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Сохранение пользователя в базе данных
-	err = a.storage.CreateUser(req.Login, string(hashedPassword))
+	err = a.storage.CreateUser(r.Context(), req.Login, string(hashedPassword))
 	if err != nil {
 		if err.Error() == "user already exists" {
 			http.Error(w, "User already exists", http.StatusConflict)
@@ -61,7 +61,7 @@ func (a *app) UserRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получение данных пользователя из хранилища
-	user, err := a.storage.GetUserByLogin(req.Login)
+	user, err := a.storage.GetUserByLogin(r.Context(), req.Login)
 	if err != nil {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
@@ -88,7 +88,7 @@ func (a *app) UserLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получение данных пользователя из хранилища
-	user, err := a.storage.GetUserByLogin(req.Login)
+	user, err := a.storage.GetUserByLogin(r.Context(), req.Login)
 	if err != nil {
 		if err.Error() == "user not found" {
 			http.Error(w, "Invalid login or password", http.StatusUnauthorized)
@@ -302,7 +302,7 @@ func (a *app) checkOrderStatus(ctx context.Context, orderNumber string) {
 		switch accrualInfo.Status {
 		case "PROCESSED", "INVALID":
 			// Если статус окончательный, обновляем в хранилище и завершаем
-			_ = a.storage.UpdateOrderStatus(orderNumber, accrualInfo.Status, accrualInfo.Accrual)
+			_ = a.storage.UpdateOrderStatus(ctx, orderNumber, accrualInfo.Status, accrualInfo.Accrual)
             // Обновление баланса пользователя, если статус "PROCESSED"
 			if accrualInfo.Status == "PROCESSED" {
 				_ = a.storage.UpdateUserBalance(ctx, accrualInfo.Accrual)

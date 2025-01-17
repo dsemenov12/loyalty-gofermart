@@ -24,9 +24,9 @@ func Test_app_UserRegister(t *testing.T) {
 	// создаём объект-заглушку
 	m := mocks.NewMockStorage(ctrl)
 
-	m.EXPECT().GetUserByLogin("user").Return(&models.User{ID: 1, Login: "user"}, nil).AnyTimes()
-	m.EXPECT().CreateUser("user", gomock.Any()).AnyTimes()
-	m.EXPECT().CreateUser("user1", gomock.Any()).Return(errors.New("user already exists")).AnyTimes()
+	m.EXPECT().GetUserByLogin(gomock.Any(), "user").Return(&models.User{ID: 1, Login: "user"}, nil).AnyTimes()
+	m.EXPECT().CreateUser(gomock.Any(), "user", gomock.Any()).AnyTimes()
+	m.EXPECT().CreateUser(gomock.Any(), "user1", gomock.Any()).Return(errors.New("user already exists")).AnyTimes()
 
 	// создадим экземпляр приложения и передадим ему «хранилище»
     app := NewApp(m)
@@ -96,8 +96,8 @@ func Test_app_UserLogin(t *testing.T) {
 	// создаём объект-заглушку
 	m := mocks.NewMockStorage(ctrl)
 
-	m.EXPECT().GetUserByLogin("user").Return(&models.User{ID: 1, Login: "user", Password: "$2a$10$dJQ76.hRXamJDPf.wYT/suWxZU0K25tvubpcXy8lW8X6ERzzBGQX2"}, nil).AnyTimes()
-	m.EXPECT().GetUserByLogin("user1").Return(nil, errors.New("user not found")).AnyTimes()
+	m.EXPECT().GetUserByLogin(gomock.Any(), "user").Return(&models.User{ID: 1, Login: "user", Password: "$2a$10$dJQ76.hRXamJDPf.wYT/suWxZU0K25tvubpcXy8lW8X6ERzzBGQX2"}, nil).AnyTimes()
+	m.EXPECT().GetUserByLogin(gomock.Any(), "user1").Return(nil, errors.New("user not found")).AnyTimes()
 
 	// создадим экземпляр приложения и передадим ему «хранилище»
     app := NewApp(m)

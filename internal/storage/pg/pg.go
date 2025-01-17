@@ -21,8 +21,8 @@ func NewStorage(conn *sql.DB) *StorageDB {
 }
 
 // Добавляет нового пользователя в базу данных
-func (s *StorageDB) CreateUser(login, hashedPassword string) error {
-	_, err := s.conn.Exec(`
+func (s *StorageDB) CreateUser(ctx context.Context, login, hashedPassword string) error {
+	_, err := s.conn.ExecContext(ctx, `
 		INSERT INTO users (login, password)
 		VALUES ($1, $2)
 	`, login, hashedPassword)
@@ -38,8 +38,8 @@ func (s *StorageDB) CreateUser(login, hashedPassword string) error {
 }
 
 // Возвращает пользователя по логину
-func (s *StorageDB) GetUserByLogin(login string) (*models.User, error) {
-	row := s.conn.QueryRow(`
+func (s *StorageDB) GetUserByLogin(ctx context.Context, login string) (*models.User, error) {
+	row := s.conn.QueryRowContext(ctx, `
 		SELECT id, login, password
 		FROM users
 		WHERE login = $1
@@ -63,7 +63,7 @@ func (s *StorageDB) SaveOrder(ctx context.Context, orderNumber string) (bool, er
 
 	// Проверка существующего номера заказа
 	var existingUserID string
-	err := s.conn.QueryRow(`
+	err := s.conn.QueryRowContext(ctx, `
 		SELECT user_id FROM orders WHERE number = $1
 	`, orderNumber).Scan(&existingUserID)
 
@@ -79,7 +79,7 @@ func (s *StorageDB) SaveOrder(ctx context.Context, orderNumber string) (bool, er
 	}
 
 	// Вставка нового заказа
-	_, err = s.conn.Exec(`
+	_, err = s.conn.ExecContext(ctx, `
 		INSERT INTO orders (user_id, number, status, created_at)
 		VALUES ($1, $2, 'PROCESSING', NOW())
 	`, userID, orderNumber)
@@ -95,7 +95,7 @@ func (s *StorageDB) SaveOrder(ctx context.Context, orderNumber string) (bool, er
 func (s *StorageDB) GetOrdersByUser(ctx context.Context) ([]models.Order, error) {
 	userID := ctx.Value(auth.UserIDKey)
 	
-	rows, err := s.conn.Query(`
+	rows, err := s.conn.QueryContext(ctx, `
 		SELECT number, status, accrual, created_at
 		FROM orders
 		WHERE user_id = $1
@@ -232,13 +232,12 @@ func (s *StorageDB) GetUserWithdrawals(ctx context.Context) ([]models.Withdrawal
 }
 
 // Обновляет статус заказа и количество начисленных баллов
-func (s *StorageDB) UpdateOrderStatus(orderNumber, status string, accrual float64) error {
-	query := `
+func (s *StorageDB) UpdateOrderStatus(ctx context.Context, orderNumber, status string, accrual float64) error {
+	_, err := s.conn.ExecContext(ctx, `
 		UPDATE orders
 		SET status = $2, accrual = $3, updated_at = NOW()
 		WHERE number = $1
-	`
-	_, err := s.conn.Exec(query, orderNumber, status, accrual)
+	`, orderNumber, status, accrual)
 	return err
 }
 
